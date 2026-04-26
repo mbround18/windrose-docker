@@ -1,0 +1,116 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: windrose-dev
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: windrose-data-pvc
+  namespace: windrose-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: windrose-server
+  namespace: windrose-dev
+  labels:
+    app: windrose
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: windrose
+  template:
+    metadata:
+      labels:
+        app: windrose
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: windrose-dedicated
+          image: mbround18/windrose:latest
+          env:
+            - name: TZ
+              value: "America/Los_Angeles"
+            - name: NAME
+              value: "Windrose Dedicated Server (Dev)"
+            - name: APP_ID
+              value: "4129620"
+            - name: INSTALL_PATH
+              value: "/home/steam/windrose"
+            - name: FORCE_WINDOWS
+              value: "true"
+            - name: LAUNCH_MODE
+              value: "proton"
+            - name: PROTON_VERSION
+              value: "GE-Proton10-34"
+            - name: EXECUTABLE
+              value: "/home/steam/windrose/R5/Binaries/Win64/WindroseServer-Win64-Shipping.exe"
+            - name: WINDROSE_LAUNCH_ARGS
+              value: "--log"
+            - name: AUTO_UPDATE
+              value: "false"
+            - name: AUTO_UPDATE_CRON
+              value: "0 3 * * *"
+            - name: WINDROSE_SERVER_NAME
+              value: "Dev Windrose Server"
+            - name: WINDROSE_MAX_PLAYERS
+              value: "4"
+            - name: WINDROSE_REGION
+              value: "DEV"
+            - name: WINDROSE_DIRECT_CONNECTION
+              value: "true"
+            - name: WINDROSE_DIRECT_PORT
+              value: "7777"
+            - name: RUST_LOG
+              value: "debug"
+          ports:
+            - containerPort: 7777
+              protocol: UDP
+            - containerPort: 7778
+              protocol: UDP
+            - containerPort: 27015
+              protocol: UDP
+          volumeMounts:
+            - name: server-storage
+              mountPath: /home/steam/windrose
+      volumes:
+        - name: server-storage
+          persistentVolumeClaim:
+            claimName: windrose-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: windrose-service
+  namespace: windrose-dev
+spec:
+  type: NodePort
+  selector:
+    app: windrose
+  ports:
+    - name: game-port
+      port: 7777
+      targetPort: 7777
+      nodePort: 30777
+      protocol: UDP
+    - name: beacon-port
+      port: 7778
+      targetPort: 7778
+      nodePort: 30778
+      protocol: UDP
+    - name: query-port
+      port: 27015
+      targetPort: 27015
+      nodePort: 30015
+      protocol: UDP

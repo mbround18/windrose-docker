@@ -1,0 +1,10 @@
+{
+    "ServerDescription_Persistent": {
+        "ServerName": "My Awesome Windrose Server",
+        "MaxPlayerCount": 16,
+        "UserSelectedRegion": "US",
+        "UseDirectConnection": true,
+        "DirectConnectionServerPort": 7777
+    },
+    "SomeOtherSetting": "This should be preserved"
+}

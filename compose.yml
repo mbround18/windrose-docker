@@ -1,0 +1,56 @@
+services:
+  windrose:
+    build: .
+    image: windrose-docker
+    stop_grace_period: 60s
+    init: true
+    restart: unless-stopped
+    user: 1000:1000
+    environment:
+      - TZ=America/Los_Angeles
+      - NAME=Windrose Dedicated Server
+      - APP_ID=4129620
+      - INSTALL_PATH=/home/steam/windrose
+      - FORCE_WINDOWS=true
+      - LAUNCH_MODE=proton
+      - PROTON_VERSION=GE-Proton10-34
+      - EXECUTABLE=/home/steam/windrose/R5/Binaries/Win64/WindroseServer-Win64-Shipping.exe
+      - WINDROSE_LAUNCH_ARGS=--log
+      - AUTO_UPDATE=false
+      - AUTO_UPDATE_CRON="0 3 * * *"
+      - WINDROSE_SERVER_NAME="My Awesome Windrose Server"
+      - WINDROSE_MAX_PLAYERS=16
+      - WINDROSE_REGION="US"
+      - WINDROSE_DIRECT_CONNECTION=true
+      - WINDROSE_DIRECT_PORT=7777
+      - RUST_LOG=info
+    ports:
+      - "7777:7777/udp"
+      - "7778:7778/udp"
+      - "27015:27015/udp"
+    volumes:
+      - ./data/windrose/server:/home/steam/windrose
+      - ./data/windrose/compatdata:/home/steam/compatdata
+      - windrose-proton:/home/steam/proton
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pid=$$(cat /home/steam/windrose/instance.pid 2>/dev/null) && [ -n
+          "$$pid" ] && [ -r "/proc/$$pid/stat" ] && state=$$(awk '{print $$3}'
+          "/proc/$$pid/stat") && [ "$$state" != "Z" ]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15m
+    command:
+      - /bin/bash
+      - -lc
+      - |
+        set -euo pipefail
+        windrose-docker install
+        windrose-docker start
+        exec windrose-docker monitor
+
+volumes:
+  windrose-proton:
+
